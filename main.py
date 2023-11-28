@@ -38,10 +38,12 @@ class Tank:
         self.coins = 0
         self.points = 0
         self.av = 2
+        self.reload_speed = 1
         self.max_missiles = 6
         self.sp = 0
         self.rotsp = 0
         self.misl = 0
+        self.reld = 0
 
 
     def move_forward(self):
@@ -82,6 +84,15 @@ class Tank:
         if self.lives > 0:
             self.a += self.av
 
+    def reload(self):
+        if self.time < 240:
+            self.time += self.reload_speed
+        else:
+            self.time = 0
+            if self.missiles < self.max_missiles:
+                self.missiles += 1
+
+
     def render(self, img):
         if self.lives > 0:
             rotated_img = pygame.transform.rotate(img, self.a)
@@ -89,12 +100,7 @@ class Tank:
             self.mask = pygame.mask.from_surface(rotated_img)
             self.rx = self.x - rotated_img.get_width() // 2
             self.ry = self.y - rotated_img.get_height() // 2
-            if self.time < 200:
-                self.time += 1
-            else:
-                self.time = 0
-                if self.missiles < self.max_missiles:
-                    self.missiles += 1
+
 
     def render_coins(self):
         if self.coins < 10:
@@ -162,7 +168,7 @@ class Enemy:
 
     def render(self):
         self.mask = pygame.mask.from_surface(self.img)
-        screen.blit(enemy_1_image, (self.x, self.y))
+        screen.blit(self.img, (self.x, self.y))
 
     def targetting(self):
         if tank_1.rx > self.x:
@@ -255,15 +261,21 @@ main_menu_up = pygame.transform.scale(pygame.image.load('images/button_images/ma
 main_menu_down = pygame.transform.scale(pygame.image.load('images/button_images/main_menu_down.png'), (384, 96))
 continue_up = pygame.transform.scale(pygame.image.load('images/button_images/continue_up.png'), (384, 96))
 continue_down = pygame.transform.scale(pygame.image.load('images/button_images/continue_down.png'), (384, 96))
+
+# загрузка кнопок клавиатуры (для управления игроками)
 w_button = pygame.transform.scale(pygame.image.load('images/button_images/w.png'), (96, 96))
 a_button = pygame.transform.scale(pygame.image.load('images/button_images/a.png'), (96, 96))
 s_button = pygame.transform.scale(pygame.image.load('images/button_images/s.png'), (96, 96))
 d_button = pygame.transform.scale(pygame.image.load('images/button_images/d.png'), (96, 96))
 space = pygame.transform.scale(pygame.image.load('images/button_images/space.png'), (384, 96))
+up_button = pygame.transform.scale(pygame.image.load('images/button_images/up.png'), (96, 96))
+down_button = pygame.transform.scale(pygame.image.load('images/button_images/down.png'), (96, 96))
+right_button = pygame.transform.scale(pygame.image.load('images/button_images/right.png'), (96, 96))
+left_button = pygame.transform.scale(pygame.image.load('images/button_images/left.png'), (96, 96))
+q_button = pygame.transform.scale(pygame.image.load('images/button_images/q.png'), (96, 96))
+m_button = pygame.transform.scale(pygame.image.load('images/button_images/m.png'), (96, 96))
 
-
-
-# загрузка кнопок улучшений в одиночной игре
+# загрузка кнопок улучшений и 'эволюции' в одиночной игре
 upgrade_up = pygame.transform.scale(pygame.image.load('images/button_images/upgrade_up.png'), (32, 32))
 upgrade_down = pygame.transform.scale(pygame.image.load('images/button_images/upgrade_down.png'), (32, 32))
 
@@ -273,17 +285,22 @@ heart_image = pygame.transform.scale(pygame.image.load('images/other_imgs/heart.
 missil_image = pygame.transform.scale(pygame.image.load('images/other_imgs/missil.png'), (32, 32))
 coin_image = pygame.transform.scale(pygame.image.load('images/other_imgs/coin.png'), (32, 32))
 enemy_1_image = pygame.image.load('images/other_imgs/enemy_1.png')
+enemy_2_image = pygame.transform.scale((pygame.image.load('images/other_imgs/enemy_2.png')), (64, 64))
 reload_image = pygame.transform.scale(pygame.image.load('images/other_imgs/reload.png'), (80, 16))
 bullets_image = pygame.transform.scale(pygame.image.load('images/other_imgs/bullets.png'), (80, 16))
 speed_image = pygame.transform.scale(pygame.image.load('images/other_imgs/speed.png'), (52, 16))
 rotation_image = pygame.transform.scale(pygame.image.load('images/other_imgs/rotation.png'), (80, 16))
-cost_10 = pygame.transform.scale(pygame.image.load('images/other_imgs/cost_10.png'), (32, 20))
 
 
 # некоторые объекты и функции, необходимые для игрового цикла
-def create_enemy():
-    enemy = Enemy(enemy_1_image)
-    enemies.append(enemy)
+def create_enemy_1():
+    enemy_1 = Enemy(enemy_1_image)
+    enemies.append(enemy_1)
+
+
+def create_enemy_2():
+    enemy_2 = Enemy(enemy_2_image)
+    enemies.append(enemy_2)
 
 
 tank_1 = Tank(100, 400, 90)
@@ -301,13 +318,40 @@ def game_for_one():
     running = True
     while running:
 
+        screen.fill(c_1)
+
         t += 1
 
-        if t % 60 == 0:
-            tank_1.points += 10
+        if t < 3600:
+            if t % 120 == 0:
+                tank_1.points += 10
 
-        if t % 240 == 0:
-            create_enemy()
+            if t % 240 == 0:
+                create_enemy_1()
+
+            if t % 1200 == 0:
+                create_enemy_1()
+
+            draw_text('Wave 1: ' + str((3600 - t)//60) + ' s', font, c_2, screen, 400, 50)
+
+        if 3600 <= t <= 4500:
+            draw_text('Cooldown: ' + str((4500 - t) // 60) + ' s', font, c_2, screen, 400, 50)
+
+
+        if 4500 < t < 8100:
+            if t % 120 == 0:
+                tank_1.points += 10
+
+            if t % 240 == 0:
+                create_enemy_1()
+
+            if t % 600 == 0:
+                create_enemy_2()
+
+            if t % 1000 == 0:
+                create_enemy_1()
+
+            draw_text('Wave 2: ' + str((8100 - t) // 60) + ' s', font, c_2, screen, 400, 50)
 
 
         for e in pygame.event.get():
@@ -336,13 +380,12 @@ def game_for_one():
         if keys[pygame.K_s]:
             tank_1.move_back()
 
-        screen.fill(c_1)
-
 #########################################################################
 
         button_upgrade_speed = pygame.Rect(860, 80, 32, 32)
         button_upgrade_rotation_speed = pygame.Rect(860, 130, 32, 32)
         button_upgrade_missiles = pygame.Rect(860, 180, 32, 32)
+        button_upgrade_reload = pygame.Rect(860, 230, 32, 32)
 
         mx, my = pygame.mouse.get_pos()
 
@@ -358,12 +401,16 @@ def game_for_one():
             pygame.transform.scale(pygame.image.load('images/scale_imgs/scale_' + str(tank_1.misl) + '.png'), (96, 32)),
             (900, 180)
         )
+        screen.blit(
+            pygame.transform.scale(pygame.image.load('images/scale_imgs/scale_' + str(tank_1.reld) + '.png'), (96, 32)),
+            (900, 230)
+        )
 
         screen.blit(speed_image, pygame.Rect(900, 64, 52, 8))
         screen.blit(rotation_image, pygame.Rect(896, 114, 80, 8))
         screen.blit(bullets_image, pygame.Rect(891, 164, 80, 8))
-        screen.blit(cost_10, pygame.Rect(910, 225, 32, 20))
-        screen.blit(coin_image, pygame.Rect(950, 220, 32, 32))
+        screen.blit(reload_image, pygame.Rect(891, 214, 80, 8))
+        screen.blit(coin_image, pygame.Rect(950, 270, 32, 32))
 
         if tank_1.coins >= 10:
             if button_upgrade_speed.collidepoint((mx, my)):
@@ -374,7 +421,6 @@ def game_for_one():
                         tank_1.v += 0.5
                         tank_1.coins -= 10
                         tank_1.sp += 1
-                    click = False
             else:
                 screen.blit(upgrade_up, button_upgrade_speed)
 
@@ -401,14 +447,26 @@ def game_for_one():
                         tank_1.max_missiles += 1
                         tank_1.coins -= 10
                         tank_1.misl += 1
-                    click = False
             else:
                 screen.blit(upgrade_up, button_upgrade_missiles)
+
+            if tank_1.coins >= 10:
+                if button_upgrade_reload.collidepoint((mx, my)):
+                    screen.blit(upgrade_down, button_upgrade_reload)
+                    if click:
+                        if tank_1.sp < 10:
+                            b.play()
+                            tank_1.reload_speed += 0.5
+                            tank_1.coins -= 10
+                            tank_1.reld += 1
+                else:
+                    screen.blit(upgrade_up, button_upgrade_reload)
 
             click = False
 
 ####################################################################
 
+        tank_1.reload()
         tank_1.render_coins()
 
         for enemy in enemies:
@@ -492,6 +550,8 @@ def game_for_two():
 
         tank_1.render(green_tank)
         tank_2.render(brown_tank)
+        tank_1.reload()
+        tank_2.reload()
         tank_1.render_hearts_tank_1()
         tank_2.render_hearts_tank_2()
         tank_1.render_missiles_tank_1()
@@ -551,20 +611,8 @@ def main_menu():
         if button_play_two.collidepoint((mx, my)):
             screen.blit(two_players_down, button_play_two)
             if click:
-                tank_1.x = 50
-                tank_1.y = 700
-                tank_1.lives = 3
-                tank_1.coins = 0
-                tank_1.points = 0
-                tank_1.a = 90
-                tank_2.x = 950
-                tank_2.y = 150
-                tank_2.lives = 3
-                tank_2.coins = 0
-                tank_2.points = 0
-                tank_2.a = 270
                 b.play()
-                game_for_two()
+                control_menu_two()
         else:
             screen.blit(two_players_up, button_play_two)
         if button_quit.collidepoint((mx, my)):
@@ -597,9 +645,16 @@ def control_menu_one():
                     tank_1.coins = 0
                     tank_1.points = 0
                     tank_1.a = 90
+                    tank_1.missiles = 6
+                    tank_1.v = 2
+                    tank_1.av = 2
+                    tank_1.max_missiles = 6
+                    tank_1.reload_speed = 1
                     tank_1.sp = 0
                     tank_1.rotsp = 0
                     tank_1.misl = 0
+                    tank_1.reld = 0
+
                     enemies.clear()
                     b.play()
                     game_for_one()
@@ -616,6 +671,56 @@ def control_menu_one():
         draw_text('Space - shoot', font, c_2, screen, 600, 350)
         draw_text('Escape - pause', font, c_2, screen, 600, 400)
         draw_text('Press to start', font, c_2, screen, 470, 620)
+
+        clock.tick(fps)
+        pygame.display.update()
+
+
+def control_menu_two():
+    while True:
+        screen.fill(c_1)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    tank_1.x = 50
+                    tank_1.y = 700
+                    tank_1.lives = 3
+                    tank_1.points = 0
+                    tank_1.a = 90
+                    tank_1.missiles = 6
+                    tank_1.v = 2
+                    tank_1.av = 2
+                    tank_1.max_missiles = 6
+                    tank_1.reload_speed = 1
+                    tank_2.x = 950
+                    tank_2.y = 150
+                    tank_2.lives = 3
+                    tank_2.points = 0
+                    tank_2.a = 270
+                    enemies.clear()
+                    b.play()
+                    game_for_two()
+
+        screen.blit(w_button, (190, 100))
+        screen.blit(a_button, (40, 250))
+        screen.blit(s_button, (190, 250))
+        screen.blit(d_button, (340, 250))
+        screen.blit(q_button, (190, 400))
+
+        screen.blit(up_button, (750, 100))
+        screen.blit(left_button, (600, 250))
+        screen.blit(down_button, (750, 250))
+        screen.blit(right_button, (900, 250))
+        screen.blit(m_button, (750, 400))
+
+        draw_text('1st Player', font, c_2, screen, 150, 50)
+        draw_text('2nd Player', font, c_2, screen, 700, 50)
+        screen.blit(space, (320, 550))
+        draw_text('Press to start', font, c_2, screen, 400, 660)
 
         clock.tick(fps)
         pygame.display.update()
@@ -652,8 +757,15 @@ def pause_menu_one():
                 tank_1.points = 0
                 tank_1.a = 90
                 tank_1.sp = 0
+                tank_1.missiles = 6
+                tank_1.v = 2
+                tank_1.av = 2
+                tank_1.max_missiles = 6
+                tank_1.reload_speed = 1
+                tank_1.sp = 0
                 tank_1.rotsp = 0
                 tank_1.misl = 0
+                tank_1.reld = 0
                 enemies.clear()
                 b.play()
                 game_for_one()
@@ -676,6 +788,7 @@ def pause_menu_one():
 
         clock.tick(fps)
         pygame.display.update()
+
 
 def pause_menu_two():
     while True:
@@ -764,9 +877,14 @@ def death_menu_one():
                 tank_1.coins = 0
                 tank_1.points = 0
                 tank_1.a = 90
+                tank_1.v = 2
+                tank_1.av = 2
+                tank_1.max_missiles = 6
+                tank_1.reload_speed = 1
                 tank_1.sp = 0
                 tank_1.rotsp = 0
                 tank_1.misl = 0
+                tank_1.reld = 0
                 b.play()
                 game_for_one()
         else:
@@ -810,12 +928,18 @@ def death_menu_two():
                 tank_1.coins = 0
                 tank_1.points = 0
                 tank_1.a = 90
+                tank_1.missiles = 6
+                tank_1.max_missiles = 6
+                tank_1.av = 2
+                tank_1.reload_speed = 1
+                tank_1.v = 2
                 tank_2.x = 950
                 tank_2.y = 150
                 tank_2.lives = 3
                 tank_2.coins = 0
                 tank_2.points = 0
                 tank_2.a = 270
+                tank_2.missiles = 6
                 b.play()
                 game_for_two()
         else:
