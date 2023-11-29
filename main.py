@@ -63,17 +63,17 @@ class Tank:
 
     def move_back(self):
         if self.lives > 0:
-            if 0 < self.x < 1024:
+            if 32 < self.x < 992:
                 self.x -= self.v * cos(self.a/57.3)
-            elif self.x < 0:
+            elif self.x < 32:
                 self.x += self.v
-            elif self.x > 1024:
+            elif self.x > 992:
                 self.x -= self.v
-            if 0 < self.y < 768:
+            if 32 < self.y < 736:
                 self.y += self.v * sin(self.a/57.3)
-            elif self.y < 0:
+            elif self.y < 32:
                 self.y += self.v
-            elif self.y > 768:
+            elif self.y > 736:
                 self.y -= self.v
 
     def rotate_r(self):
@@ -229,10 +229,60 @@ class Bullet:
                 tank_1.coins += 5
 
 
-    def move(self):
+    def move_1(self):
         self.x += self.vx
         self.y -= self.vy
         self.a = 1
+
+        # АПДЕЙТ 3 Начало
+    def move_2(self):
+        for i in range(len(wall_vertical_rect)):
+            if (wall_vertical_rect[i]).collidepoint(self.rect.center):
+                self.vx *= (-1)
+        for i in range(len(wall_horizontal_rect)):
+            if (wall_horizontal_rect[i]).collidepoint(self.rect.center):
+                self.vy *= (-1)
+                # Апдейт 3 конец
+        self.x += self.vx
+        self.y -= self.vy
+        self.a = 1
+
+
+# АПДЕЙТ 1 | 28.11.2023. Начало
+# Первичное создание контура лабиринта
+wall_vertical = pygame.image.load('images/other_imgs/wall_vertical_10x50.png').convert_alpha()
+wall_vertical_rect = []
+for i in range(H // 50 + 2):
+    wall_vertical_rect.append(wall_vertical.get_rect(left=0, top=i * 50 + 90))
+    wall_vertical_rect.append(wall_vertical.get_rect(right=W, top=i * 50 + 90))
+
+wall_horizontal = pygame.image.load('images/other_imgs/wall_horizontal_50x10.png').convert_alpha()
+wall_horizontal_rect = []
+for i in range(W // 50 + 2):
+    wall_horizontal_rect.append(wall_horizontal.get_rect(left=i * 50, top=90))
+    wall_horizontal_rect.append(wall_horizontal.get_rect(right=i * 50, bottom=H))
+
+# Карта для двоих (настраивается вручную)
+for i in range(6):
+    wall_horizontal_rect.append(wall_horizontal.get_rect(left=50 * i, top=H - 120))
+    wall_horizontal_rect.append(wall_horizontal.get_rect(right=W - 50 * i, top=120 + 90))
+for i in range(3):
+    wall_vertical_rect.append(wall_vertical.get_rect(left=300, bottom=H - 120 - 50 * i + 10))
+    wall_vertical_rect.append(wall_vertical.get_rect(right=W - 300, top=120 + 90 + 50 * i))
+for i in range(4):
+    wall_vertical_rect.append(wall_vertical.get_rect(left=300, bottom=-250 + H - 120 - 50 * i + 10))
+    wall_vertical_rect.append(wall_vertical.get_rect(right=W - 300, top=+250 + 120 + 90 + 50 * i))
+
+for i in range(3):
+    wall_horizontal_rect.append(wall_horizontal.get_rect(left=250 - 50 * i, top=H - 120 - 50 * 3 + 10))
+    wall_horizontal_rect.append(wall_horizontal.get_rect(left=W - 310 + 50 * i, top=120 + 90 + 150))
+
+for i in range(10):
+    wall_vertical_rect.append(wall_vertical.get_rect(left=420, bottom=H - 50 * i + 10))
+    wall_vertical_rect.append(wall_vertical.get_rect(right=W - 420, top=120 - 30 + 50 * i))
+
+
+# АПДЕЙТ 1 | 28.11.2023. Конец
 
 
 # загрузка звуковых эффектов
@@ -481,7 +531,7 @@ def game_for_one():
             if bul.life >= 100:
                 bullets.remove(bul)
             bul.hittest_enemy()
-            bul.move()
+            bul.move_1()
             bul.render()
             bul.hittest_tank_1(tank_1.mask)
 
@@ -540,10 +590,20 @@ def game_for_two():
 
         screen.fill(c_1)
 
+        # АПДЕЙТ 2 | 28.11.2023. Начало
+        # Рисование вертикальных стенок лабиринта
+
+        for i in range(len(wall_vertical_rect)):
+            screen.blit(wall_vertical, wall_vertical_rect[i])
+
+        for i in range(len(wall_horizontal_rect)):
+            screen.blit(wall_horizontal, wall_horizontal_rect[i])
+        # АПДЕЙТ 2 | 28.11.2023. Конец
+
         for bul in bullets:
             if bul.life >= 100:
                 bullets.remove(bul)
-            bul.move()
+            bul.move_2()
             bul.render()
             bul.hittest_tank_1(tank_1.mask)
             bul.hittest_tank_2(tank_2.mask)
@@ -816,15 +876,15 @@ def pause_menu_two():
                 tank_1.x = 50
                 tank_1.y = 700
                 tank_1.lives = 3
-                tank_1.coins = 0
                 tank_1.points = 0
                 tank_1.a = 90
+                tank_1.missiles = 6
                 tank_2.x = 950
                 tank_2.y = 150
                 tank_2.lives = 3
-                tank_2.coins = 0
                 tank_2.points = 0
                 tank_2.a = 270
+                tank_2.missiles = 6
                 b.play()
                 game_for_two()
         else:
