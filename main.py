@@ -29,6 +29,7 @@ clock = pygame.time.Clock()
 class Tank:
 
     def __init__(self, x, y, a):
+
         # Местоположение и угол поворота
         self.x = x
         self.y = y
@@ -37,6 +38,8 @@ class Tank:
         # Местоположение реального центра танка
         self.rx = 0
         self.ry = 0
+        self.w = 0
+        self.h = 0
 
         # Линейная и угловая скорость
         self.v = 2
@@ -64,6 +67,9 @@ class Tank:
 
         self.img = green_tank
         self.fire_mode = 1
+        self.shield = 0
+        self.defence = 0
+        self.rect = pygame.Rect(self.x, self.y, self.w, self.h)
 
     # Движение танка вперёд
     def move_forward(self):
@@ -108,21 +114,33 @@ class Tank:
 
     # Перезарядка патронов
     def reload(self):
-        if self.time < 240:
-            self.time += self.reload_speed
-        else:
+        self.time += 1
+        if self.time % (240 - self.reld*15) == 0 and self.missiles < self.max_missiles:
+            self.missiles += 1
+        if self.time % 400 == 0 and self.defence == 1 and self.shield < 3:
+            self.shield += 1
+        if self.time == 3600:
             self.time = 0
-            if self.missiles < self.max_missiles:
-                self.missiles += 1
 
     # Отображение картинки танка на экране
     def render(self):
         if self.lives > 0:
             rotated_img = pygame.transform.rotate(self.img, self.a)
-            self.rx = self.x - rotated_img.get_width() // 2
-            self.ry = self.y - rotated_img.get_height() // 2
+            self.w = rotated_img.get_width() // 2
+            self.h = rotated_img.get_height() // 2
+            self.rx = self.x - self.w
+            self.ry = self.y - self.h
             self.mask = pygame.mask.from_surface(rotated_img)
             screen.blit(rotated_img, (self.rx, self.ry))
+            if self.shield == 1:
+                rotated_shield = pygame.transform.rotate(shield_1, self.a)
+                screen.blit(rotated_shield, (self.rx - self.w, self.ry - self.h))
+            if self.shield == 2:
+                rotated_shield = pygame.transform.rotate(shield_2, self.a)
+                screen.blit(rotated_shield, (self.rx - self.w, self.ry - self.h))
+            if self.shield == 3:
+                rotated_shield = pygame.transform.rotate(shield_3, self.a)
+                screen.blit(rotated_shield, (self.rx - self.w, self.ry - self.h))
 
     # Отображение кол-ва монет и значка монетки на экране в одиночном режиме (координата x зависит от кол-ва монет)
     def render_coins(self):
@@ -136,7 +154,7 @@ class Tank:
             screen.blit(coin_image, (105, 90))
         draw_text(str(self.coins), font, c_2, screen, 8, 88)
 
-        draw_text('10', font, c_2, screen, 905, 268 )
+        draw_text('10', font, c_2, screen, 905, 268)
 
     # Отображение на экране кол-ва патронов 1-го и 2-го танков (Так как патроны должны отображаться в определённых
     # частях экрана, эти методы разбиты на отдельные для каждого танка)
@@ -154,6 +172,10 @@ class Tank:
     def render_hearts_tank_1(self):
         for i in range(self.lives):
             screen.blit(heart_image, (5 + i*32, 10))
+
+    def render_shield(self):
+        for i in range(self.shield):
+            screen.blit(shield_image, (101 + i*32, 10))
 
     def render_hearts_tank_2(self):
         for i in range(self.lives):
@@ -206,6 +228,8 @@ class Tank:
         self.reld = 0
         self.img = green_tank
         self.fire_mode = 1
+        self.shield = 0
+        self.defence = 0
         bullets.clear()
         money.clear()
         enemies.clear()
@@ -215,10 +239,10 @@ class Tank:
 class Enemy:
     def __init__(self, img):
         self.x, self.y = random.choice(
-        [(-50, random.randint(0, H)),
-        (W + 50, random.randint(0, H)),
-        (random.randint(0, W), -50),
-        (random.randint(0, W), H + 50)]
+            [(-50, random.randint(0, H)),
+                (W + 50, random.randint(0, H)),
+                (random.randint(0, W), -50),
+                (random.randint(0, W), H + 50)]
         )
         self.a = 1
         self.v = 2
@@ -246,10 +270,13 @@ class Enemy:
         self.y += self.vy
 
     def hittest(self):
-        if self.mask.overlap(tank_1.mask, (tank_1.rx - self.x, tank_1.ry - self.y)):
+        if tank_1.shield > 0:
+            if self.mask.overlap(shield_mask, (tank_1.rx - tank_1.w - self.x, tank_1.ry - tank_1.h - self.y)):
+                tank_1.shield -= 1
+                return True
+        elif self.mask.overlap(tank_1.mask, (tank_1.rx - self.x, tank_1.ry - self.y)):
             tank_1.lives -= 1
             return True
-
 
 
 
@@ -270,8 +297,6 @@ class Coin:
                 coin_sound.play()
                 tank_1.coins += 5
                 self.life = 0
-
-
 
 
 class Bullet:
@@ -332,8 +357,6 @@ class Bullet:
         self.x += self.vx
         self.y -= self.vy
         self.a = 1
-
-
 
 
 # АПДЕЙТ 1 | 28.11.2023. Начало
@@ -436,6 +459,11 @@ speed_image = pygame.transform.scale(pygame.image.load('images/other_imgs/speed.
 rotation_image = pygame.transform.scale(pygame.image.load('images/other_imgs/rotation.png'), (80, 16))
 boss = pygame.image.load('images/other_imgs/boss.png')
 coin_drop = pygame.image.load('images/other_imgs/coin_drop.png')
+shield_1 = pygame.transform.scale(pygame.image.load('images/other_imgs/shield_1.png'), (128, 128))
+shield_2 = pygame.transform.scale(pygame.image.load('images/other_imgs/shield_2.png'), (128, 128))
+shield_3 = pygame.transform.scale(pygame.image.load('images/other_imgs/shield_3.png'), (128, 128))
+shield_mask = pygame.mask.from_surface(shield_1)
+shield_image = pygame.transform.scale(pygame.image.load('images/other_imgs/shield_image.png'), (32, 32))
 
 
 # некоторые объекты и функции, необходимые для игрового цикла
@@ -495,6 +523,8 @@ def evolve_menu():
             screen.blit(shield_down, button_shield)
             if click:
                 b.play()
+                tank_1.defence = 1
+                tank_1.shield = 3
                 ind = False
 
         else:
@@ -567,6 +597,16 @@ def game_for_one():
             if t % 300 == 0:
                 create_enemy_2()
 
+        if t > 13380:
+            draw_text('Have fun!', font, c_2, screen, 400, 50)
+
+            if t % 100 == 0 or t % 450 == 0:
+                create_enemy_1()
+
+            if t % 150 == 0:
+                create_enemy_2()
+
+
 
 
         for e in pygame.event.get():
@@ -604,6 +644,7 @@ def game_for_one():
 
         tank_1.reload()
         tank_1.render_coins()
+        tank_1.render_shield()
 
         for m in money:
             m.render()
@@ -630,6 +671,7 @@ def game_for_one():
         tank_1.render_missiles_tank_1()
         tank_1.render_points()
         tank_1.render()
+
 
         #########################################################################
 
@@ -704,7 +746,7 @@ def game_for_one():
                 if button_upgrade_reload.collidepoint((mx, my)):
                     screen.blit(upgrade_down, button_upgrade_reload)
                     if click:
-                        if tank_1.sp < 10:
+                        if tank_1.reld < 10:
                             b.play()
                             tank_1.reload_speed += 0.5
                             tank_1.coins -= 10
